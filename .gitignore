@@ -4,6 +4,8 @@ node_modules
 /backend/GO
 /backend/taxi_log_2008_by_id
 /backend/__pycache__
+/build
+/*课程设计报告书*
 
 # local env files
 .env.local
