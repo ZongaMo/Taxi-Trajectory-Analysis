@@ -1,19 +1,25 @@
 import random
 import os
-from flask import Flask, request, jsonify
-from typing import List, Optional
+import flask
+import typing
 from dataclasses import dataclass
-from datetime import datetime
-from flask_cors import CORS  # 引入flask-cors
-from flask_socketio import SocketIO, emit
-from concurrent.futures import ThreadPoolExecutor
-from coordTransform import wgs84_to_gcj02
+import datetime
+import flask_cors
+# import flask_socketio
+import concurrent.futures as futures
+import coordTransform_utils
 
-app = Flask(__name__)
+app = flask.Flask(__name__)
+CORS = flask_cors.CORS
+# SocketIO = flask_socketio.SocketIO
+
+# 后续使用时替换为完整路径
+wgs84_to_gcj02 = coordTransform_utils.wgs84_to_gcj02
+
 # DATA_DIR = ".\\src\\utils\\taxi_log_2008_by_id"
 DATA_DIR = "taxi_log_2008_by_id"
-socketio = SocketIO(app, cors_allowed_origins='*')
-CORS(app)  # 启用CORS支持
+
+
 # F1
 @dataclass
 class TrailPoint:
@@ -37,7 +43,7 @@ class TrailLine:
         points: 轨迹点列表
     """
     taxi_id: str
-    points: List[TrailPoint]
+    points: typing.List[TrailPoint]
 
 def is_valid_point(lat: float, lng: float, timestamp: str) -> bool:
     """
@@ -52,18 +58,18 @@ def is_valid_point(lat: float, lng: float, timestamp: str) -> bool:
     try:
         if not (39.4 <= lat <= 41.0 and 115.7 <= lng <= 117.4):
             return False
-        datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
+        datetime.datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
         return True
     except:
         return False
 
-def load_taxi_data(taxi_id: str) -> Optional[TrailLine]:
+def load_taxi_data(taxi_id: str) -> typing.Optional[TrailLine]:
     """
     加载指定出租车ID的轨迹数据
     Args:
         taxi_id: 出租车ID
     Returns:
-        Optional[TrailLine]: 如果文件存在且包含有效数据返回TrailLine对象，否则返回None
+        typing.Optional[TrailLine]: 如果文件存在且包含有效数据返回TrailLine对象，否则返回None
     """
     filepath = os.path.join(DATA_DIR, f"{taxi_id}.txt")
     if not os.path.exists(filepath):
@@ -84,13 +90,13 @@ def load_taxi_data(taxi_id: str) -> Optional[TrailLine]:
                     continue
     return TrailLine(taxi_id=taxi_id, points=points) if points else None
 
-def remove_duplicate_points(trail: TrailLine) -> List[TrailPoint]:
+def remove_duplicate_points(trail: TrailLine) -> typing.List[TrailPoint]:
     """
     移除轨迹中的重复点
     Args:
         trail: 原始轨迹线
     Returns:
-        List[TrailPoint]: 去重后的轨迹点列表
+        typing.List[TrailPoint]: 去重后的轨迹点列表
     """
     if not trail.points:
         return []
@@ -117,14 +123,14 @@ def perpendicular_distance(p: TrailPoint, start: TrailPoint, end: TrailPoint) ->
     base = ((end.latitude - start.latitude) ** 2 + (end.longitude - start.longitude) ** 2) ** 0.5
     return area / base
 
-def douglas_peucker(points: List[TrailPoint], tolerance: float) -> List[TrailPoint]:
+def douglas_peucker(points: typing.List[TrailPoint], tolerance: float) -> typing.List[TrailPoint]:
     """
     使用Douglas-Peucker算法简化轨迹
     Args:
         points: 原始轨迹点列表
         tolerance: 简化容忍度
     Returns:
-        List[TrailPoint]: 简化后的轨迹点列表
+        typing.List[TrailPoint]: 简化后的轨迹点列表
     """
     if len(points) <= 2:
         return points.copy()
@@ -166,7 +172,7 @@ def get_trail_lists():
     Returns:
         JSON响应：包含符合条件的出租车轨迹ID列表
     """
-    keyword = request.args.get('keyword', '')
+    keyword = flask.request.args.get('keyword', '')
     try:
         all_taxi_ids = [f.split('.')[0] for f in os.listdir(DATA_DIR) if f.endswith('.txt')]
         matching_ids = []
@@ -176,9 +182,9 @@ def get_trail_lists():
                 if len(matching_ids) >= 50:
                     break
     except FileNotFoundError:
-        return jsonify({"error": "Data directory not found"}), 500
+        return flask.jsonify({"error": "Data directory not found"}), 500
 
-    return jsonify(matching_ids)
+    return flask.jsonify(matching_ids)
 
 @app.route('/trails/data', methods=['POST'])
 def get_trails_post():
@@ -198,13 +204,13 @@ def get_trails_post():
     }
     """
     try:
-        req = request.get_json(force=True)
-        print(req)
+        req = flask.request.get_json(force=True)
+        # print(req)
     except Exception:
-        return jsonify({"error": "Invalid JSON body"}), 400
+        return flask.jsonify({"error": "Invalid JSON body"}), 400
 
     taxi_ids = req.get("taxi_ids", "all")
-    sample_count = req.get("sampleCount", None)
+    sample_count = req.get("sample_count", None)
     simplify = req.get("simplify", False)
     tolerance = float(req.get("tolerance", 0.0001))
                       
@@ -215,10 +221,12 @@ def get_trails_post():
                 sample_count = int(sample_count)
                 random.shuffle(all_ids)
                 taxi_ids = all_ids[:sample_count]
+                # print(taxi_ids)
             else:
                 taxi_ids = all_ids
+                # print(taxi_ids)
         except FileNotFoundError:
-            return jsonify({"error": "Data directory not found"}), 500
+            return flask.jsonify({"error": "Data directory not found"}), 500
 
     result = []
     def process_taxi_id(taxi_id):
@@ -228,18 +236,19 @@ def get_trails_post():
             transformed_points = []
             for pt in trail.points:
                 lng_gcj, lat_gcj = wgs84_to_gcj02(pt.longitude, pt.latitude)
-                transformed_points.append([lat_gcj, lng_gcj, datetime.strptime(pt.timestamp, "%Y-%m-%d %H:%M:%S").timestamp()])
+                transformed_points.append([lat_gcj, lng_gcj, datetime.datetime.strptime(pt.timestamp, "%Y-%m-%d %H:%M:%S").timestamp()])
             return {
                 "vendor": int(trail.taxi_id),
                 "path": transformed_points
             }
         return None
 
-    with ThreadPoolExecutor(max_workers=16) as executor:
+    with futures.ThreadPoolExecutor(max_workers=16) as executor:
+        # print("Processing taxi IDs:", taxi_ids)
         results = list(executor.map(process_taxi_id, taxi_ids))
 
     result = [r for r in results if r]
-    return jsonify(result)
+    return flask.jsonify(result)
 
 
 if __name__ == "__main__":

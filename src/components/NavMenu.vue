@@ -51,9 +51,9 @@
         />
       </el-select>
       <el-button
+        :loading="this.loading"
         type="primary"
         v-show="this.activeIndex === '/'"
-        :loading="this.loading"
         @click="handleSearch"
       >
         确定

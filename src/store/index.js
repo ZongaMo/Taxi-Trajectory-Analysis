@@ -196,7 +196,7 @@ export default new Vuex.Store({
             taxi_ids === "all"
               ? JSON.stringify({
                   taxi_ids: "all",
-                  sample_count: 100,
+                  sample_count: 1000,
                   simplify: simplify,
                   tolerance: tolerance,
                 })
