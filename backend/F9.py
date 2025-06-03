@@ -1,7 +1,8 @@
 from flask import Flask, request, jsonify
 import os
 from datetime import datetime
-from multiprocessing import Pool, cpu_count, Manager
+from concurrent.futures import ThreadPoolExecutor
+import os
 from coordTransform_utils import wgs84_to_gcj02
 import time
 
@@ -115,7 +116,7 @@ def analyze_shortest_path():
         area1 = tuple(map(float, request.args['area1'].split(',')))
         area2 = tuple(map(float, request.args['area2'].split(',')))
         target_hour = int(request.args['hour']) if 'hour' in request.args else None
-        folder_path = request.args.get('folder_path', 'GO')
+        folder_path = request.args.get('folder_path', 'taxi_log_2008_by_id')
         
         # 坐标转换
         def convert_area(area):
@@ -131,43 +132,41 @@ def analyze_shortest_path():
         area2 = convert_area(area2)
         
         # 并行处理
-        with Manager() as manager:
-            result_dict = manager.dict()
-            files = [os.path.join(folder_path, f) 
-                    for f in os.listdir(folder_path) 
-                    if f.endswith('.txt')]
-            
-            workers = min(cpu_count(), 4)
-            with Pool(workers) as pool:
-                pool.map(process_trajectory,
-                        [(f, area1, area2, target_hour, result_dict) for f in files],
-                        chunksize=5)
-            
-            # 构建响应
-            response_data = []
-            if target_hour is not None:
-                stats = result_dict.get(target_hour, {'path': None, 'time': -1, 'count': 0})
+        from collections import defaultdict
+
+        result_dict = defaultdict(lambda: {'path': None, 'time': -1, 'count': 0})
+        files = [os.path.join(folder_path, f) 
+                for f in os.listdir(folder_path) 
+                if f.endswith('.txt')]
+
+        with ThreadPoolExecutor(max_workers=5000) as executor:
+            executor.map(process_trajectory, [(f, area1, area2, target_hour, result_dict) for f in files])
+        
+        # 构建响应
+        response_data = []
+        if target_hour is not None:
+            stats = result_dict.get(target_hour, {'path': None, 'time': -1, 'count': 0})
+            response_data.append({
+                "hour": target_hour,
+                "path": stats['path'],
+                "travel_time": stats['time'],
+                "sample_count": stats['count']
+            })
+        else:
+            for hour in range(24):
+                stats = result_dict.get(hour, {'path': None, 'time': -1, 'count': 0})
                 response_data.append({
-                    "hour": target_hour,
+                    "hour": hour,
                     "path": stats['path'],
                     "travel_time": stats['time'],
                     "sample_count": stats['count']
                 })
-            else:
-                for hour in range(24):
-                    stats = result_dict.get(hour, {'path': None, 'time': -1, 'count': 0})
-                    response_data.append({
-                        "hour": hour,
-                        "path": stats['path'],
-                        "travel_time": stats['time'],
-                        "sample_count": stats['count']
-                    })
-            
-            return jsonify({
-                "status": "success",
-                "data": response_data,
-                "process_time": round(time.time() - start_time, 2)
-            })
+        
+        return jsonify({
+            "status": "success",
+            "data": response_data,
+            "process_time": round(time.time() - start_time, 2)
+        })
     
     except Exception as e:
         return jsonify({

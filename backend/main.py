@@ -17,7 +17,21 @@ import F8
 import F9
 # import flask_sWerkzeug pkg_resources不支持作为API使用ocketio
 
+import time
 app = flask.Flask(__name__)
+
+@app.before_request
+def log_request_start():
+    print(f"收到 {flask.request.method} 请求，请求路径: {flask.request.path}")
+
+@app.after_request
+def log_request_end(response):
+    print(f"响应时间: {time.time() - flask.g.start_time:.4f} 秒")
+    return response
+
+@app.before_request
+def start_timer():
+    flask.g.start_time = time.time()
 
 # F1
 @app.route('/trailLists', methods=['GET'])

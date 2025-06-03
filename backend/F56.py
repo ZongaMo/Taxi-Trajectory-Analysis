@@ -2,7 +2,9 @@ from flask import Flask, request, jsonify
 import os
 import math
 import numpy as np
-from multiprocessing import Pool, cpu_count, shared_memory
+import threading
+from concurrent.futures import ThreadPoolExecutor
+import numpy as np
 from coordTransform_utils import wgs84_to_gcj02
 from datetime import datetime
 import time
@@ -19,85 +21,75 @@ class SpatialIndex:
         self.cols = math.ceil((self.max_lng - self.min_lng) / grid_size)
         self.rows = math.ceil((self.max_lat - self.min_lat) / grid_size)
 
-def create_shared_flow_array():
-    """创建共享内存数组用于统计流量"""
-    shm = shared_memory.SharedMemory(create=True, size=24*2*4)  # 24小时×2种流量×4字节
-    arr = np.ndarray((24, 2), dtype=np.int32, buffer=shm.buf)
-    arr.fill(0)
-    return shm, arr
+
 
 def process_file_optimized(args):
     """优化后的文件处理函数"""
-    filename, area1, area2, shm_name = args
-    try:
-        # 访问共享内存
-        existing_shm = shared_memory.SharedMemory(name=shm_name)
-        flow_stats = np.ndarray((24, 2), dtype=np.int32, buffer=existing_shm.buf)
+    filename, area1, area2, flow_stats = args
         
-        # 提前计算区域边界
-        a1_min_lng, a1_max_lng, a1_min_lat, a1_max_lat = area1
-        a2_bounds = area2 if area2 else None
-        
-        with open(filename, 'r') as file:
-            current_taxi = None
-            prev_in_a1 = False
-            prev_in_a2 = False
-            prev_hour = None
-            
-            for line in file:
-                # 使用快速分割方法
-                parts = line.split(',', 3)
-                if len(parts) < 4:
-                    continue
-                
-                try:
-                    taxi_id = parts[0]
-                    time_part = parts[1][11:13]  # 直接提取小时部分
-                    hour = int(time_part)
-                    lng = float(parts[2])
-                    lat = float(parts[3])
-                    
-                    # 坐标转换
-                    lng, lat = wgs84_to_gcj02(lng, lat)
-                    
-                    # 状态检查
-                    if taxi_id != current_taxi:
-                        current_taxi = taxi_id
-                        prev_in_a1 = False
-                        prev_in_a2 = False
-                        prev_hour = None
-                    
-                    # 区域判断（使用短路计算加速）
-                    in_a1 = (a1_min_lng <= lng <= a1_max_lng) and (a1_min_lat <= lat <= a1_max_lat)
-                    in_a2 = False
-                    if a2_bounds:
-                        a2_min_lng, a2_max_lng, a2_min_lat, a2_max_lat = a2_bounds
-                        in_a2 = (a2_min_lng <= lng <= a2_max_lng) and (a2_min_lat <= lat <= a2_max_lat)
-                    
-                    # 状态转移检测
-                    if prev_hour == hour:
-                        if a2_bounds:
-                            # 双区域模式
-                            if prev_in_a1 and in_a2:
-                                flow_stats[hour][1] += 1  # flowOut
-                            elif prev_in_a2 and in_a1:
-                                flow_stats[hour][0] += 1  # flowIn
-                        else:
-                            # 单区域模式
-                            if not prev_in_a1 and in_a1:
-                                flow_stats[hour][0] += 1  # flowIn
-                            elif prev_in_a1 and not in_a1:
-                                flow_stats[hour][1] += 1  # flowOut
-                    
-                    prev_in_a1 = in_a1
-                    prev_in_a2 = in_a2
-                    prev_hour = hour
-                
-                except (ValueError, IndexError):
-                    continue
+    # 提前计算区域边界
+    a1_min_lng, a1_max_lng, a1_min_lat, a1_max_lat = area1
+    a2_bounds = area2 if area2 else None
     
-    finally:
-        existing_shm.close()
+    with open(filename, 'r') as file:
+        current_taxi = None
+        prev_in_a1 = False
+        prev_in_a2 = False
+        prev_hour = None
+        
+        for line in file:
+            # 使用快速分割方法
+            parts = line.split(',', 3)
+            if len(parts) < 4:
+                continue
+            
+            try:
+                taxi_id = parts[0]
+                time_part = parts[1][11:13]  # 直接提取小时部分
+                hour = int(time_part)
+                lng = float(parts[2])
+                lat = float(parts[3])
+                
+                # 坐标转换
+                lng, lat = wgs84_to_gcj02(lng, lat)
+                
+                # 状态检查
+                if taxi_id != current_taxi:
+                    current_taxi = taxi_id
+                    prev_in_a1 = False
+                    prev_in_a2 = False
+                    prev_hour = None
+                
+                # 区域判断（使用短路计算加速）
+                in_a1 = (a1_min_lng <= lng <= a1_max_lng) and (a1_min_lat <= lat <= a1_max_lat)
+                in_a2 = False
+                if a2_bounds:
+                    a2_min_lng, a2_max_lng, a2_min_lat, a2_max_lat = a2_bounds
+                    in_a2 = (a2_min_lng <= lng <= a2_max_lng) and (a2_min_lat <= lat <= a2_max_lat)
+                
+                # 状态转移检测
+                if prev_hour == hour:
+                    if a2_bounds:
+                        # 双区域模式
+                        if prev_in_a1 and in_a2:
+                            flow_stats[hour][1] += 1  # flowOut
+                        elif prev_in_a2 and in_a1:
+                            flow_stats[hour][0] += 1  # flowIn
+                    else:
+                        # 单区域模式
+                        if not prev_in_a1 and in_a1:
+                            flow_stats[hour][0] += 1  # flowIn
+                        elif prev_in_a1 and not in_a1:
+                            flow_stats[hour][1] += 1  # flowOut
+                
+                prev_in_a1 = in_a1
+                prev_in_a2 = in_a2
+                prev_hour = hour
+            
+            except (ValueError, IndexError):
+                continue
+
+        
 
 @app.route('/flow_analysis', methods=['GET'])
 def analyze_flow():
@@ -109,21 +101,19 @@ def analyze_flow():
         area1 = tuple(map(float, request.args['area1'].split(',')))
         area2 = tuple(map(float, request.args.get('area2', '').split(','))) if 'area2' in request.args else None
         folder_path = request.args.get('folder_path', 'taxi_log_2008_by_id')
-        workers = min(int(request.args.get('workers', cpu_count())), cpu_count())
         
         # 创建共享内存
-        shm, flow_array = create_shared_flow_array()
+        flow_array = np.zeros((24, 2), dtype=np.int32)
         
         try:
             # 准备任务
             files = [os.path.join(folder_path, f) for f in os.listdir(folder_path) 
                     if f.endswith('.txt')]
-            args = [(f, area1, area2, shm.name) for f in files]
+            args = [(f, area1, area2, flow_array) for f in files]
             
             # 并行处理（使用imap_unordered减少内存占用）
-            with Pool(workers) as pool:
-                for _ in pool.imap_unordered(process_file_optimized, args, chunksize=10):
-                    pass
+            with ThreadPoolExecutor(max_workers=5000) as executor:
+                executor.map(process_file_optimized, args)
             
             # 生成响应
             output = []
@@ -142,14 +132,10 @@ def analyze_flow():
                 "params": {
                     "area1": area1,
                     "area2": area2 if area2 else None,
-                    "workersUsed": workers
                 }
             })
-        
-        finally:
-            shm.close()
-            shm.unlink()
-    
+        except Exception as e:
+            raise e
     except Exception as e:
         return jsonify({
             "status": "error",
