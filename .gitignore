@@ -6,6 +6,7 @@ node_modules
 /backend/__pycache__
 /build
 /*课程设计报告书*
+*main
 
 # local env files
 .env.local
