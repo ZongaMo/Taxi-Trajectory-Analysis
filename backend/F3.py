@@ -15,7 +15,7 @@
 from flask import Flask, request, jsonify
 import sqlite3
 import datetime
-from coordTransform import wgs84_to_gcj02,gcj02_to_wgs84
+import coordTransform_utils
 
 # 初始化Flask应用
 app = Flask(__name__)
@@ -24,10 +24,10 @@ app = Flask(__name__)
 DB_PATH = "trajectory.db"
 
 def transform_wgs84_to_gcj02_point(lng, lat):
-    return wgs84_to_gcj02(lng, lat)
+    return coordTransform_utils.wgs84_to_gcj02(lng, lat)
 
 def transform_gcj02_to_wgs84_point(lng, lat):
-    return gcj02_to_wgs84(lng, lat)
+    return coordTransform_utils.gcj02_to_wgs84(lng, lat)
 
 @app.route('/query_region', methods=['POST'])
 def query_region():

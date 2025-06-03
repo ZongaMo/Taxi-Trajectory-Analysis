@@ -2,7 +2,9 @@ from flask import Flask, request, jsonify
 import os
 import math
 import numpy as np
-from multiprocessing import Pool, cpu_count, shared_memory
+import multiprocessing
+Pool = multiprocessing.Pool
+import multiprocessing.shared_memory as shared_memory
 from coordTransform_utils import wgs84_to_gcj02
 import time
 
@@ -68,20 +70,22 @@ def process_file_optimized(args):
                     if 0 <= grid_x < lng_size and 0 <= grid_y < lat_size:
                         heatmap[hour, grid_x, grid_y] += 1
                 except (ValueError, IndexError):
+                    print(f"Error processing line: {line}")
                     continue
     finally:
         existing_shm.close()
 
-@app.route('/api/heatmap', methods=['GET'])
+@app.route('/api/heatmap', methods=['POST'])
 def get_optimized_heatmap():
     """修正后的热力图端点"""
     start_time = time.time()
     
     try:
         # 参数解析
-        grid_size = float(request.args.get('grid_width', 0.01))
-        target_hour = int(request.args['hour']) if 'hour' in request.args else None
-        folder_path = request.args.get('folder_path', 'taxi_log_2008_by_id')
+        data = request.get_json()
+        grid_size = float(data.get('grid_width', 0.01))
+        target_hour = int(data['hour']) if 'hour' in data else None
+        folder_path = data.get('folder_path', 'taxi_log_2008_by_id')
         
         # 创建共享热力图（获取网格尺寸）
         shm, grid_dims = create_shared_heatmap(grid_size)
@@ -90,7 +94,8 @@ def get_optimized_heatmap():
         try:
             # 并行处理
             files = [f for f in os.listdir(folder_path) if f.endswith('.txt')]
-            with Pool(min(cpu_count(), 4)) as pool:
+            print(f"Processing {len(files)} files...")
+            with Pool(min(multiprocessing.cpu_count(), 4)) as pool:
                 pool.map(process_file_optimized,
                         [(f, folder_path, grid_size, shm.name, grid_dims) for f in files],
                         chunksize=5)
@@ -147,4 +152,4 @@ def get_optimized_heatmap():
         }), 400
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0',debug=True, port=5000)

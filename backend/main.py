@@ -15,6 +15,7 @@ import F56
 import F7
 import F8
 import F9
+# import flask_sWerkzeug pkg_resources不支持作为API使用ocketio
 
 app = flask.Flask(__name__)
 
@@ -34,7 +35,7 @@ def new_query_region():
 
 
 # F4
-@app.route('/heatmap', methods=['GET'])
+@app.route('/heatmap', methods=['POST'])
 def new_get_optimized_heatmap():
     return F4.get_optimized_heatmap()
 

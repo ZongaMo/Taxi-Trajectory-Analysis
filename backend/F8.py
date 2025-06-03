@@ -9,7 +9,8 @@ from flask import Flask, request, jsonify
 import sqlite3
 import math
 from collections import defaultdict, Counter
-from coordTransform import wgs84_to_gcj02,gcj02_to_wgs84
+import coordTransform_utils
+
 
 # 初始化Flask应用
 app = Flask(__name__)
@@ -33,10 +34,10 @@ def point_in_rect(lng, lat, lt, rb):
     return lt[0] <= lng <= rb[0] and rb[1] <= lat <= lt[1]
 
 def transform_wgs84_to_gcj02_point(lng, lat):
-    return wgs84_to_gcj02(lng, lat)
+    return coordTransform_utils.wgs84_to_gcj02(lng, lat)
 
 def transform_gcj02_to_wgs84_point(lng, lat):
-    return gcj02_to_wgs84(lng, lat)
+    return coordTransform_utils.gcj02_to_wgs84(lng, lat)
     
 def encode_path(trail, grid_size=0.001):
     """

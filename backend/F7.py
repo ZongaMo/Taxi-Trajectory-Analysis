@@ -4,13 +4,13 @@ from flask import Flask, request, jsonify
 import sqlite3
 import math
 from collections import defaultdict, Counter
-from coordTransform import wgs84_to_gcj02
+import coordTransform_utils
 
 app = Flask(__name__)
 DB_PATH = "trajectory.db"
 
 def transform_wgs84_to_gcj02_point(lng, lat):
-    lng_gcj, lat_gcj = wgs84_to_gcj02(lng, lat)
+    lng_gcj, lat_gcj = coordTransform_utils.wgs84_to_gcj02(lng, lat)
     return lng_gcj, lat_gcj
 # 经纬度转换为大致距离（单位：米）
 def haversine(lat1, lng1, lat2, lng2):

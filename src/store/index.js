@@ -134,15 +134,17 @@ export default new Vuex.Store({
       // 设置轨迹加载状态为 true
       commit("SET_TRAILS", { loading: true });
       try {
-        const params = new URLSearchParams({
+        const params = {
           r: r / 111,
           hour: startTime,
-        });
-        const response = await fetch(`/api/heatmap?${params.toString()}`, {
-          method: "GET",
+        };
+        const response = await fetch(`/api/heatmap`, {
+          method: "POST",
           headers: {
+            "Content-Type": "application/json",
             Accept: "application/json",
           },
+          body: JSON.stringify(params),
         });
         var data = await response.json();
         if (data.length === 0) {

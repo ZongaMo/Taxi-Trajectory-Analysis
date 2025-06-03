@@ -1,12 +1,20 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import warnings
+warnings.filterwarnings('ignore')
+
+from PyInstaller.utils.hooks import collect_all  
+ 
+# 一次性获取 flask-orm 的所有资源  
+flask_datas, flask_binaries, flask_hiddenimports = collect_all('flask_socketio')  
+
 
 a = Analysis(
     ['backend\\main.py'],
     pathex=[],
-    binaries=[],
-    datas=[],
-    hiddenimports=[],
+    binaries=flask_binaries,
+    datas=[*flask_datas],
+    hiddenimports=flask_hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
