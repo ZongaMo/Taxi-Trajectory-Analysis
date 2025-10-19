@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=development
+      - DATA_DIR=/data/taxi_log_2008_by_id
+      - DB_PATH=/data/trajectory.db
+    volumes:
+      - taxi_data:/data
+    networks:
+      - app-network
+
+  init-db:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    entrypoint: ["python", "build_trajectory_db.py"]
+    environment:
+      - DATA_DIR=/data/taxi_log_2008_by_id
+      - DB_PATH=/data/trajectory.db
+    volumes:
+      - taxi_data:/data
+    networks:
+      - app-network
+    profiles:
+      - init
+
+volumes:
+  taxi_data:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge

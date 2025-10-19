@@ -2,8 +2,9 @@ import os
 import sqlite3
 import datetime
 
-DATA_DIR = r".\\taxi_log_2008_by_id"
-DB_PATH = "trajectory.db"
+# 从环境变量读取路径，默认使用当前目录
+DATA_DIR = os.environ.get('DATA_DIR', r".\\taxi_log_2008_by_id")
+DB_PATH = os.environ.get('DB_PATH', "trajectory.db")
 
 def parse_line(line):
     parts = line.strip().split(',')

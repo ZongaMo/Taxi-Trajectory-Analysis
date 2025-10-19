@@ -15,8 +15,9 @@ import coordTransform_utils
 # 初始化Flask应用
 app = Flask(__name__)
 
-# 数据库路径
-DB_PATH = "trajectory.db"
+import os
+# 数据库路径，从环境变量读取
+DB_PATH = os.environ.get('DB_PATH', "trajectory.db")
 
 def point_in_rect(lng, lat, lt, rb):
     """

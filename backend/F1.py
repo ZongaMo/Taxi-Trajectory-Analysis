@@ -16,8 +16,8 @@ CORS = flask_cors.CORS
 # 后续使用时替换为完整路径
 wgs84_to_gcj02 = coordTransform_utils.wgs84_to_gcj02
 
-# DATA_DIR = ".\\src\\utils\\taxi_log_2008_by_id"
-DATA_DIR = "taxi_log_2008_by_id"
+# 从环境变量读取数据目录路径
+DATA_DIR = os.environ.get('DATA_DIR', "taxi_log_2008_by_id")
 
 
 # F1

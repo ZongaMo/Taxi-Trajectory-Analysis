@@ -20,8 +20,8 @@ import coordTransform_utils
 # 初始化Flask应用
 app = Flask(__name__)
 
-# 数据库路径
-DB_PATH = "trajectory.db"
+# 数据库路径，从环境变量读取
+DB_PATH = os.environ.get('DB_PATH', "trajectory.db")
 
 def transform_wgs84_to_gcj02_point(lng, lat):
     return coordTransform_utils.wgs84_to_gcj02(lng, lat)

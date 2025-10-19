@@ -1,0 +1,25 @@
+FROM python:3.9-slim
+
+# 设置工作目录
+WORKDIR /app/backend
+
+# 复制requirements文件
+COPY backend/requirements.txt .
+
+# 安装Python依赖
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 复制后端代码
+COPY backend/ .
+
+# 创建数据目录
+RUN mkdir -p /data
+
+# 暴露5000端口
+EXPOSE 5000
+
+# 启动脚本
+COPY backend/init_data.py /app/backend/
+
+# 启动后端服务前先检查数据
+CMD python init_data.py && python main.py

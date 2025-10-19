@@ -1,163 +1,171 @@
 # Taxi-Trajectory-Analysis
-## 1.数据配置
-### 1.1. 题目叙述
-[数据文件01.zip – 014.zip](http://research.microsoft.com/apps/pubs/?id=152883)
 
-将该数据文件解压后，得到10375个txt文件(共 766 MB)。文件记录了北京市10,000辆出租车1星期的GPS轨迹数据。记录的格式如下所示：
+[中文](./README_CN.md)
+
+## 1. Data Configuration
+### 1.1. Project Description
+[Data Files 01.zip – 014.zip](http://research.microsoft.com/apps/pubs/?id=152883)
+
+After unzipping these data files, you will get 10,375 txt files (total 766 MB). These files record GPS trajectory data of 10,000 taxis in Beijing over a period of one week. The record format is as follows:
 ```
 1,2008-02-02 15:36:08,116.51172,39.92123
 1,2008-02-02 15:46:08,116.51135,39.93883
 1,2008-02-02 15:46:08,116.51135,39.93883
 …
 ```
-每个记录对应一个时空点，其中包含用户标识Id,时间Time，经度longitude，纬度latitude。请基于该数据，进行出租车轨迹的分析。
-## 1.2. 文件内的数据说明概要
-  本数据集包含2008年2月2日至2月8日期间北京市10,357辆出租车的GPS轨迹数据。数据集总点数约1,500万条，轨迹总里程达900万公里。图1展示了连续两点间时间间隔与距离间隔的分布情况，平均采样间隔约为177秒，平均距离间隔约为623米。每个文件以出租车ID命名，包含单辆车的轨迹数据。图2可视化展示了数据集中GPS点的密度分布。
-  ![加载失败](src/assets/README/image.png)
+Each record corresponds to a spatiotemporal point, containing user ID, time, longitude, and latitude. Please conduct taxi trajectory analysis based on this data.
 
-## 2. 技术框架
-- **后端**：基于Python的数据算法，包括数据结构的设计，后续题目涉及到的存储、传输、查询、搜索、分析等。
-  - 写成**可调用的函数**交给我部署
-  - <u>**所有返回的结果都需要转化为json格式**</u>
-  - 需要写**简单的API说明**介绍 *参数配置* ， *返回值结构* 和 其他注意事项 以便快速使用；
-  - **数据压缩优化：** 例如对位置没有移动的数据进行删减去重，只保留一头一尾
+### 1.2. Data Overview
+This dataset contains GPS trajectory data of 10,357 taxis in Beijing from February 2 to February 8, 2008. The dataset includes approximately 15 million trajectory points, with a total trajectory mileage of 9 million kilometers. Figure 1 shows the distribution of time intervals and distance intervals between consecutive points, with an average sampling interval of about 177 seconds and an average distance interval of about 623 meters. Each file is named after a taxi ID and contains trajectory data for a single vehicle. Figure 2 visually displays the density distribution of GPS points in the dataset.
+![Image failed to load](src/assets/README/image.png)
 
-- **前端**：基于Vue2框架的可视化web页面，这部分我可以独立设计和完成；
+## 2. Technical Framework
+- **Backend**: Python-based data algorithms, including data structure design, storage, transmission, query, search, and analysis for subsequent tasks.
+  - Written as **callable functions** for deployment
+  - <u>**All returned results need to be converted to JSON format**</u>
+  - Need to write **simple API documentation** introducing *parameter configuration*, *return value structure*, and other notes for quick use;
+  - **Data compression optimization**: For example, removing duplicate data points with no movement, keeping only the start and end points.
 
-- **所有人**：针对自己设计的部分撰写课程设计报告书的**公共部分**写入共享文档中，待开发结束后再撰写个人部分，公共部分涉及：
-  - 一、选题背景（全部）
-  - 二、方案论证（全部）
-  - 三、过程论述（前后端之间的交互）
-  - 四、结果分析（待商讨）
+- **Frontend**: Vue2-based visual web page, which can be independently designed and completed;
 
-## 3. 功能要求
-#### F1. 出租车轨迹可视化 *(前端已实现,等待后端数据API设计)*
-显示**所有**或者**某部**出租车的轨迹。
-- 选用**腾讯地图**的JavaScript API，因为其他地图的api都要收费
-- 效果如下：
-![加载失败](src/assets/README/image-2.png)
-##### (1) 需要的API:
-  - **参数：** <u>出租车id的**数组**</u>；
-  - **返回值：** 
-    - **当有参数传入时**，返回参数数组中id对应出租车的TrailLine构成的**数组**
-    - **当没有参数传入或参数为空数组时**，返回**全部**出租车的路径，TraiLine数组,每条TrailLine对应一辆出租车；
-    - TrailLine中每个TrailPoint都包含纬度,经度和**时间戳**；
-    - ***数据量巨大，可能需要优化算法，例如使用轨迹点抽稀算法（如Douglas-Peucker）简化路径。***
+- **All team members**: Write the **public part** of the course design report for their own designed parts in the shared document. Personal parts will be written after the development is completed. The public parts include:
+  - 1. Background of the topic (all)
+  - 2. Scheme demonstration (all)
+  - 3. Process discussion (interaction between frontend and backend)
+  - 4. Result analysis (to be discussed)
 
-##### (2) 需要的数据格式:
-  - [TraiLine数组](https://lbs.qq.com/webApi/visualizationApi/visualizationDoc/visualizationDocTrail#3)
-  - [数据样例](https://mapapi.qq.com/web/lbs/visualizationApi/demo/data/trail.js)(仅供参考,没有时间戳,不是我们理想的数据结构)
-##### (3) 注意事项:
-- 考虑是否需要清洗异常点
-- 查询结果为空时的返回值
+## 3. Functional Requirements
+#### F1. Taxi Trajectory Visualization *(Frontend implemented, waiting for backend data API design)*
+Display trajectories of **all** or **specific** taxis.
+- Using **Tencent Maps** JavaScript API, as other map APIs require payment
+- Expected effect:
+![Image failed to load](src/assets/README/image-2.png)
+##### (1) Required API:
+  - **Parameters**: <u>Array of taxi IDs</u>;
+  - **Return value**: 
+    - **When parameters are provided**: Returns an **array** of TrailLine objects corresponding to the taxis with IDs in the parameter array
+    - **When no parameters are provided or the parameter is an empty array**: Returns paths for **all** taxis, as a TrailLine array, where each TrailLine corresponds to a taxi;
+    - Each TrailPoint in TrailLine contains latitude, longitude, and **timestamp**;
+    - ***The data volume is huge, so optimization algorithms may be needed, such as using trajectory point thinning algorithms (like Douglas-Peucker) to simplify paths.***
 
----
-#### F2.地图缩放功能 *(已实现)*
-可以对地图进行放大或者缩小，并相应的调整出租车轨迹的展示。
+##### (2) Required data format:
+  - [TrailLine Array](https://lbs.qq.com/webApi/visualizationApi/visualizationDoc/visualizationDocTrail#3)
+  - [Data Sample](https://mapapi.qq.com/web/lbs/visualizationApi/demo/data/trail.js) (for reference only, no timestamp, not our ideal data structure)
+
+##### (3) Notes:
+- Consider whether anomaly points need to be cleaned
+- Return value when query results are empty
 
 ---
-#### F3. 区域范围查找
-统计在**某个特定的时间段**，用户**指定的矩形区域内**的出租车的**数目**。这里的矩形区域可以通过**给出**矩形的左上角和右下角的经纬度**坐标**来确定。 
+#### F2. Map Zoom Function *(Implemented)*
+Can zoom in or out on the map and adjust the display of taxi trajectories accordingly.
 
-前端考虑后期直接实现在地图上框选矩形，再根据坐标查找，对后端无影响。
-##### 需要的API:
-  - **参数：** 时间段, <u>区域</u>；(<u>带下划线</u>的参数可选，不传则默认不限制范围)
-    - 时间段
+---
+#### F3. Regional Range Search
+Count the **number** of taxis in a **user-specified rectangular area** during a **specific time period**. The rectangular area can be determined by **providing** the latitude and longitude **coordinates** of the upper-left and lower-right corners of the rectangle.
+
+The frontend considers directly implementing rectangle selection on the map in the later stage, and then searching based on coordinates, which has no impact on the backend.
+
+##### Required API:
+  - **Parameters**: Time period, <u>Area</u>; (Parameters with <u>underscore</u> are optional, default to no limitation if not provided)
+    - Time period
     ```
       {
-      "startTime":格式自定  //在api文档和注释中注明
-      "endTime":格式同上
+      "startTime": format to be determined  // specified in API documentation and comments
+      "endTime": same format as above
       }
     ```
-    - 区域
+    - Area
     ```
       {
-      "ltPoint":格式自定  //在api文档和注释中注明
-       "rbPoint":格式自定  //在api文档和注释中注明
+      "ltPoint": format to be determined  // specified in API documentation and comments
+       "rbPoint": format to be determined  // specified in API documentation and comments
       }
     ```
   
-  - **返回值：** dict
+  - **Return value**: dict
   ```
     {
      "total": Number,
-     "path":TrailLine[] # 可截取每条轨迹中对应时段的轨迹，减少传输的数据量
+     "path": TrailLine[] // Can intercept the trajectory of each trail corresponding to the time period to reduce the amount of transmitted data
     }
   ```
-##### 性能优化：
-  考虑构建合适的<u>**索引**</u>加速查询；
+
+##### Performance Optimization:
+  Consider building appropriate <u>**indexes**</u> to speed up queries;
 
 ---
-#### F4. 区域车流密度分析
-- 给定距离参数r,将整个地图划分成网格，每个格子的大小是r*r。
-统计分析在不同的时间段，经过所有网格区域内的车流密度的变化。
-- 预期效果如下：
-![加载失败](src/assets/README/image-1.png)
+#### F4. Regional Traffic Density Analysis
+- Given a distance parameter r, divide the entire map into grids, each grid size is r*r.
+Statistically analyze changes in traffic density across all grid areas during different time periods.
+- Expected effect:
+![Image failed to load](src/assets/README/image-1.png)
 
-##### 需要的API:
-  - **参数：** 网格宽度
-  - **返回值：** [HeatPoint数组](https://lbs.qq.com/webApi/visualizationApi/visualizationDoc/visualizationDocHeat#3)
-
+##### Required API:
+  - **Parameters**: Grid width
+  - **Return value**: [HeatPoint Array](https://lbs.qq.com/webApi/visualizationApi/visualizationDoc/visualizationDocHeat#3)
 
 ---
-#### F5. 区域关联分析1
-- 用户指定两个矩形区域
-统计在不同的时间段，**往来这两个区域之间的车流量的变化**。
+#### F5. Regional Correlation Analysis 1
+- User specifies two rectangular areas
+Statistics on changes in traffic flow **between these two areas** during different time periods.
 
-#### F6. 区域关联分析2。
+#### F6. Regional Correlation Analysis 2
+- User specifies a rectangular area
+Statistics on changes in traffic flow **between this rectangular area and other areas** over time.
+- Expected effect diagrams might be as follows:
+![Image failed to load](src/assets/README/image-3.png) ![Image failed to load](src/assets/README/image-4.png)
 
-- 用户指定一个矩形区域
-统计**往来该矩形区域和其他区域的车流量随时间的变化**。
-- 预期效果图可能如下:
-![加载失败](src/assets/README/image-3.png) ![加载失败](src/assets/README/image-4.png)
-##### 需要的API:
-  - **参数：** 时间段，区域1，<u>区域2</u>（<u>带下划线</u>的参数可选，不传则默认不限制范围,即F6）
-  - **返回值：**  数组
+##### Required API:
+  - **Parameters**: Time period, area1, <u>area2</u> (Parameters with <u>underscore</u> are optional, default to no limitation if not provided, i.e., F6)
+  - **Return value**: Array
   ```
-  [{"timeStamp": 自定时间格式,
+  [{"timeStamp": custom time format,
      "flowIn": Number,
-     "flowOut":Number  //In和Out针对区域1
+     "flowOut": Number  // In and Out are relative to area1
   },{...},...]
   ```
-##### 性能优化：
-- 基于**状态机**识别A→B的移动序列。
-- 优化关联查询性能，避免全表扫描。
 
-**以下问题待解决**
+##### Performance Optimization:
+- Based on **state machine** to identify A→B movement sequences.
+- Optimize correlation query performance to avoid full table scans.
+
+**The following issues need to be resolved**
 ---
 
-#### F7. 频繁路径分析1
-一条路径的**频繁度**可以定义为这条路径上通行的汽车的总数。
-根据用户给定的参数k，距离参数x，统计在整个城市中，长度超过x的最为频繁的前k个路径。
+#### F7. Frequent Path Analysis 1
+The **frequency** of a path can be defined as the total number of cars traveling on that path.
+Based on user-given parameters k and distance parameter x, count the top k most frequent paths in the entire city with length exceeding x.
 
-#### F8. 频繁路径分析2
-给定两个矩形区域A和B，分析从A到B的最为频繁的前k个通行路径。
+#### F8. Frequent Path Analysis 2
+Given two rectangular areas A and B, analyze the top k most frequent travel paths from A to B.
 
-##### ds建议：聚类算法识别路径
-- 1. ​路径聚类​：
-使用轨迹聚类算法（如TRACLUS）识别相似路径。
-- 2. ​频繁度计算​：
-统计每条路径的车辆数，取Top-K。
-- 3. ​可视化​：
-在地图上高亮显示频繁路径，标注通行次数。
-- 技术要点​：
-  - 路径相似度计算采用DTW或LCSS算法。
-  - 大数据场景下使用Spark MLlib进行分布式聚类。
+##### Suggestions for data science:
+- 1. Path clustering:
+Use trajectory clustering algorithms (such as TRACLUS) to identify similar paths.
+- 2. Frequency calculation:
+Count the number of vehicles for each path, take Top-K.
+- 3. Visualization:
+Highlight frequent paths on the map and mark the number of trips.
+- Technical points:
+  - Path similarity calculation using DTW or LCSS algorithms.
+  - Using Spark MLlib for distributed clustering in big data scenarios.
 
 ---
-#### F9. 通时行间分析
-给定两个矩形区域A和B，分析在不同的时间段，出租车从A到B的**通行时间最短的路径**，以及相应的**通行时间**。 
-##### ds建议
-- 1. ​OD点筛选​：
-筛选所有起点在A、终点在B的轨迹段。
+#### F9. Travel Time Analysis
+Given two rectangular areas A and B, analyze the **shortest travel time path** for taxis from A to B during different time periods, as well as the corresponding **travel time**.
 
-- 2. 最短时间路径​：
-按时间段统计每段轨迹的通行时间（终点时间 - 起点时间）。
-取时间最短的路径作为推荐路径。
+##### Suggestions for data science:
+- 1. OD point filtering:
+Filter all trajectory segments starting in A and ending in B.
 
-- 3. ​可视化​：
-在地图上绘制最短时间路径，标注平均通行时间。
+- 2. Shortest time path:
+Calculate the travel time for each trajectory segment by time period (end time - start time).
+Take the path with the shortest time as the recommended path.
 
-- ​技术要点​：
-  - 排除异常时间差（如超过24小时）。
-  - 结合实时交通数据动态更新最短路径。
+- 3. Visualization:
+Draw the shortest time path on the map and mark the average travel time.
+
+- Technical points:
+  - Exclude abnormal time differences (such as exceeding 24 hours).
+  - Dynamically update the shortest path by combining real-time traffic data.

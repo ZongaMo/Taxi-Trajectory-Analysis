@@ -6,8 +6,10 @@ import math
 from collections import defaultdict, Counter
 import coordTransform_utils
 
+import os
 app = Flask(__name__)
-DB_PATH = "trajectory.db"
+# 数据库路径，从环境变量读取
+DB_PATH = os.environ.get('DB_PATH', "trajectory.db")
 
 def transform_wgs84_to_gcj02_point(lng, lat):
     lng_gcj, lat_gcj = coordTransform_utils.wgs84_to_gcj02(lng, lat)
